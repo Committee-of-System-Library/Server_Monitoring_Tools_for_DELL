@@ -208,7 +208,7 @@ void check_before_running(char* username) { // Check execution conditions of thi
             printf("\n- Please install Perccli. (Package Name: Perccli)");
             printf("\n- To download rpm package, please visit DELL Website.");
             printf("\n- This program uses perccli64. If the system is 32bit, Edit define macro. (Is in 0_usrDefine.h)\n\nexit.\n\n");
-            exit(-1);
+            //exit(-1);
     }
 
     if (check_Log_Directory(HISTORY_PATH, 0750) == -1){ // Check the presense of "/var/log/00_Server_Monitoring/00_history" directory. (History file is saved to this.)

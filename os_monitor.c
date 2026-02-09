@@ -6,6 +6,7 @@
 #include <grp.h>
 #include <termio.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 extern const DateInfo dateBuf;
@@ -13,12 +14,17 @@ extern const struct winsize wbuf;
 extern int invoked_menu;
 extern const char hostnameBuf[];
 
-/* List of functions relative to 6th feature. (Display Linux User Account Status) */
+// /* List of functions relative to 6th feature. (Display Linux User Account Status) */
 void six_User_Account_Status() { // Display UserList (Name, uid, gids, Login Date, Login IP, PW Change Date)
     invoked_menu = 1;
 
+    keypad(stdscr, TRUE);
+
     UserInfo* userList = NULL;
-    int pos_x = 3, pos_y = 1, userCnt = 0, line = 0, nameWidth = 0, ipWidth = 0, lastDateWidth = 0, lastPWDateWidth = 0, grLine = 0, tmp;
+    int pos_x = 3, pos_y = 1, userCnt = 0, line = 0, nameWidth = 0, ipWidth = 0, lastDateWidth = 0, lastPWDateWidth = 0, tmp;
+    int validUserCnt = 0;
+    int* validIndices = NULL;
+
     const char* title = SUBTITLE;
     const char* footLabel = "To restore main screen, Press \"q\".";
     char groupNameBuf[UT_NAMESIZE + 1] = { '\0' }, lineBuf[BUF_MAX_LINE] = { '\0' }, ddayBuf[DDAY_LEN] = { '\0' };
@@ -29,64 +35,99 @@ void six_User_Account_Status() { // Display UserList (Name, uid, gids, Login Dat
     wbkgd(footLineWin, COLOR_PAIR(BLACK_TEXT_WHITE_BACKGROUND));
 
     get_UserList(&userList, &userCnt);
+    validIndices = (int*)malloc(sizeof(int) * userCnt);
+    for (int i = 0; i < userCnt; i++) {
+        // UID 0(Root) / UID 1000 이상(일반 유저)만 표시
+        if (userList[i].uid == 0 || userList[i].uid >= 1000) {
+            validIndices[validUserCnt++] = i;
+        }
+    }
     nameWidth = get_Maximum_Length_in_UserInfo(userList, userCnt, TYPE_USERNAME) + 2;
     ipWidth = get_Maximum_Length_in_UserInfo(userList, userCnt, TYPE_LOGIN_IP) + 3;
     lastDateWidth = get_Maximum_Length_in_UserInfo(userList, userCnt, TYPE_LOGIN_DATE) - 2;
     lastPWDateWidth = get_Maximum_Length_in_UserInfo(userList, userCnt, TYPE_PW_CHANGE_DATE);
-    mvwprintw(headLineWin, 0, (wbuf.ws_col - strlen(title)) / 2, "%s", title);
-    mvwprintw(userWin, pos_y, pos_x - 1, "6. Server User Account Status - Last Login / Password Changed Date, Login IP, Joined Groups");
-    mvwprintw(userWin, pos_y += 2, pos_x, "- Server Hostname: %s", hostnameBuf);
-    mvwprintw(userWin, pos_y, (wbuf.ws_col / 2) - CENTER_OFFSET, "!! Notification !!");
-    mvwprintw(userWin, pos_y += 1, pos_x, "- # of User Accounts: %d", userCnt);
-    mvwprintw(userWin, pos_y, (wbuf.ws_col / 2) - CENTER_OFFSET, " - \"N/A\" means that no records exist for that user.");
-    wattron(userWin, COLOR_PAIR(BLACK_TEXT_WHITE_BACKGROUND));
-    wmove(userWin, pos_y + 2, 0);
-    whline(userWin, ' ', wbuf.ws_col - 1);
-    mvwaddch(userWin, pos_y + 2, wbuf.ws_col - 1, ' ');
-    pos_x = 3;
-    for (tmp = userCnt; tmp /= 10; pos_x++);
-    mvwprintw(userWin, pos_y += 2, pos_x, "UserName(UID)");
-    mvwprintw(userWin, pos_y, pos_x += nameWidth, "Last Login Date");
-    mvwprintw(userWin, pos_y, pos_x += lastDateWidth, "Login IP");
-    mvwprintw(userWin, pos_y, pos_x += ipWidth, "PW Changed Date");
-    mvwprintw(userWin, pos_y, pos_x += lastPWDateWidth, "GroupName(GID)");
-    wattroff(userWin, COLOR_PAIR(BLACK_TEXT_WHITE_BACKGROUND));
 
     while(invoked_menu == 1) {
-        grLine = 0;
-        for (int i = 0 + line; i < userCnt; i++) {
+        wclear(headLineWin);
+        wclear(userWin);
+        wclear(footLineWin);
+
+        mvwprintw(headLineWin, 0, (wbuf.ws_col - strlen(title)) / 2, "%s", title);
+        
+        pos_y = 1; 
+        pos_x = 3;
+        mvwprintw(userWin, pos_y, pos_x - 1, "6. Server User Account Status - Last Login / Password Changed Date, Login IP, Joined Groups");
+        mvwprintw(userWin, pos_y += 2, pos_x, "- Server Hostname: %s", hostnameBuf);
+        mvwprintw(userWin, pos_y, (wbuf.ws_col / 2) - CENTER_OFFSET, "!! Notification !!");
+        mvwprintw(userWin, pos_y += 1, pos_x, "- # of User Accounts: %d", validUserCnt);
+        mvwprintw(userWin, pos_y, (wbuf.ws_col / 2) - CENTER_OFFSET, " - Only Root & user-created accounts are displayed.");
+        
+        wattron(userWin, COLOR_PAIR(BLACK_TEXT_WHITE_BACKGROUND));
+        wmove(userWin, pos_y + 2, 0);
+        whline(userWin, ' ', wbuf.ws_col - 1);
+        mvwaddch(userWin, pos_y + 2, wbuf.ws_col - 1, ' ');
+        
+        pos_x = 3;
+        for (tmp = validUserCnt; tmp /= 10; pos_x++);
+        mvwprintw(userWin, pos_y += 2, pos_x, "UserName(UID)");
+        mvwprintw(userWin, pos_y, pos_x += nameWidth, "Last Login Date");
+        mvwprintw(userWin, pos_y, pos_x += lastDateWidth, "Login IP");
+        mvwprintw(userWin, pos_y, pos_x += ipWidth, "PW Changed Date");
+        mvwprintw(userWin, pos_y, pos_x += lastPWDateWidth, "GroupName(GID)");
+        wattroff(userWin, COLOR_PAIR(BLACK_TEXT_WHITE_BACKGROUND));
+
+        // Control print position to prevent text overlap
+        int list_start_y = pos_y + 1;
+        int current_y = list_start_y;
+        int win_max_y = wbuf.ws_row - 2;
+
+        for (int k = line; k < validUserCnt; k++) { 
+            int i = validIndices[k % validUserCnt];
+            
+            if (current_y >= win_max_y) break;
+
             pos_x = 3;
-            for (tmp = userCnt; tmp /= 10; pos_x++);
-            if (i >= wbuf.ws_row - pos_y) {
-                continue;
-            }
-            mvwprintw(userWin, pos_y + i - line + 1 + grLine, 1, "%d", i + 1); // Index
-            mvwprintw(userWin, pos_y + i - line + 1 + grLine, pos_x, "%s(%d)", userList[i].userName, userList[i].uid); // UserName & UID
+            for (tmp = validUserCnt; tmp /= 10; pos_x++);
+
+            mvwprintw(userWin, current_y, 1, "%d", k + 1); 
+            mvwprintw(userWin, current_y, pos_x, "%s(%d)", userList[i].userName, userList[i].uid);
 
             if (userList[i].lastLogin.year == 0000) {
-                mvwprintw(userWin, pos_y + i - line + 1 + grLine, pos_x += nameWidth, "N/A"); // Login Date -> N/A
+                mvwprintw(userWin, current_y, pos_x += nameWidth, "N/A");
             } else {
-                mvwprintw(userWin, pos_y + i - line + 1 + grLine, pos_x += nameWidth, DATE_TIME_FORM, userList[i].lastLogin.year, userList[i].lastLogin.month, 
-                userList[i].lastLogin.day, userList[i].lastLogin.hrs, userList[i].lastLogin.min, userList[i].lastLogin.sec); // Login Date
+                mvwprintw(userWin, current_y, pos_x += nameWidth, DATE_TIME_FORM, 
+                    userList[i].lastLogin.year, userList[i].lastLogin.month, 
+                    userList[i].lastLogin.day, userList[i].lastLogin.hrs, 
+                    userList[i].lastLogin.min, userList[i].lastLogin.sec);
             }
 
-            mvwprintw(userWin, pos_y + i - line + 1 + grLine, pos_x += lastDateWidth, "%s", userList[i].loginIP); // Login IP
+            mvwprintw(userWin, current_y, pos_x += lastDateWidth, "%s", userList[i].loginIP);
 
             if (userList[i].lastChangePW.year == 0000) {
-                mvwprintw(userWin, pos_y + i - line + 1 + grLine, pos_x += ipWidth, "N/A"); // Changing Password Date -> N/A
+                mvwprintw(userWin, current_y, pos_x += ipWidth, "N/A");
             } else {
                 sprintf(lineBuf, DATE_FORM, userList[i].lastChangePW.year, userList[i].lastChangePW.month, userList[i].lastChangePW.day);
                 sprintf(ddayBuf, "(D+%d)", get_Date_Interval(&(userList[i].lastChangePW)));
                 strcat(lineBuf, ddayBuf);
-                mvwprintw(userWin, pos_y + i - line + 1 + grLine, pos_x += ipWidth, "%s", lineBuf); // Changing Password Date & Interval from password Changin date to today.
+                mvwprintw(userWin, current_y, pos_x += ipWidth, "%s", lineBuf);
             }
 
-            for (int j = 0; j < userList[i].grpCnt; j++) {
-                get_Group_Name(userList[i].gid[j], groupNameBuf); // Joined Group List
-                mvwprintw(userWin, pos_y + i - line + 1 + grLine, pos_x + lastPWDateWidth, "%s(%d)", groupNameBuf, userList[i].gid[j]);
-                grLine++;
+            // Output groups (Print on next line)
+            if (userList[i].grpCnt > 0) {
+                get_Group_Name(userList[i].gid[0], groupNameBuf);
+                mvwprintw(userWin, current_y, pos_x + lastPWDateWidth, "%s(%d)", groupNameBuf, userList[i].gid[0]);
+                current_y++; 
+            } else {
+                current_y++;
             }
-            grLine--;
+
+            for (int j = 1; j < userList[i].grpCnt; j++) {
+                if (current_y >= win_max_y) break;
+                
+                get_Group_Name(userList[i].gid[j], groupNameBuf);
+                mvwprintw(userWin, current_y, pos_x + lastPWDateWidth, "%s(%d)", groupNameBuf, userList[i].gid[j]);
+                current_y++;
+            }
         }
 
         mvwprintw(footLineWin, 0, 1, "%s", footLabel);
@@ -96,8 +137,18 @@ void six_User_Account_Status() { // Display UserList (Name, uid, gids, Login Dat
         wrefresh(headLineWin);
         wrefresh(userWin);
         wrefresh(footLineWin);
-        timeout(1000);
-        switch(getch()) {
+        
+        // scroll
+        int ch = getch();
+        switch(ch) {
+            case KEY_UP:
+            case 'n': 
+                if (line > 0) line--;
+                break;
+            case KEY_DOWN:
+            case 'm':  
+                if (line < validUserCnt - 1) line++;
+                break;
             case 'q':
             case 'Q':
             case 27: // ESC
@@ -106,11 +157,13 @@ void six_User_Account_Status() { // Display UserList (Name, uid, gids, Login Dat
         }
     }
 
-    for (int i = 0; i < userCnt; i++) { // Free allocated array.
-        free_Array((void**)&(userList[i].userName)); // Free Username Array in each user element.
-        free_Array((void**)&(userList[i].gid)); // Free GID Array in each user element.
+    if (validIndices != NULL) free(validIndices);
+
+    for (int i = 0; i < userCnt; i++) {
+        free_Array((void**)&(userList[i].userName));
+        free_Array((void**)&(userList[i].gid));
     }
-    free_Array((void**)&userList); // Free UserList Array
+    free_Array((void**)&userList);
 
     clear();
     delwin(headLineWin);

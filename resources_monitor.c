@@ -685,6 +685,8 @@ int get_Maximum_Length_of_DiskInfo(DiskInfo* diskList, int diskCnt, int type) { 
 void display_Partition_Information() { // Get Partition Information - FileSystem, mountPath, Space
     invoked_SubScreen = 1;
 
+    keypad(stdscr, TRUE);
+    
     PartitionInfo* partList = NULL;
     UNIT useUnit = 0, totalUnit = 0;
     // UNIT readUnit, writeUnit;
@@ -777,15 +779,22 @@ void display_Partition_Information() { // Get Partition Information - FileSystem
         wrefresh(userWin);
         wrefresh(footerWin);
         timeout(1000);
-        switch(getch()) {
-            case 'n':
+        int ch = getch();
+        switch(ch) {
+            case KEY_UP:    // Up arrow key
+            case 'n':       // Maintain existing key
             case 'N':
-                line -= ((line > 0) ? 1 : 0);
+                // Scroll up
+                if (line > 0) line--;
                 break;
-            case 'm':
+
+            case KEY_DOWN:  // Down arrow key
+            case 'm':       // Maintain existing key
             case 'M':
-                line += ((line < partCnt - printListCnt) ? 1 : 0);
+                // Scroll down
+                if (line < partCnt - printListCnt) line++;
                 break;
+
             case 'q':
             case 'Q':
             case 27: // ESC
