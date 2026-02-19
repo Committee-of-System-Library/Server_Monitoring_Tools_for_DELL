@@ -14,6 +14,36 @@ extern const struct winsize wbuf;
 extern int invoked_menu;
 extern const char hostnameBuf[];
 
+
+/**
+ * @brief 리눅스 유저 계정 상태 정보 출력 함수
+ * * @section FUNCTION_INFO 함수 정보
+ * - 기능 설명   : 시스템에 등록된 사용자 계정의 상세 상태(로그인 정보, 비번 변경일, 그룹 등)를 출력
+ * - 주요 타겟   : 보안 및 관리 목적상 UID 0(Root) 및 UID 1000 이상(일반 유저)만 필터링하여 표시
+ * * @section ALGORITHM 알고리즘 및 연산
+ * - 1. get_UserList()를 통해 전체 유저 정보를 수집한 후, 유효 유저(Root/일반)를 구분하기 위해 validIndices를 동적 할당
+ * - 2. 유저별 최대 이름 길이, IP 길이 등을 계산하여 화면 레이아웃을 유동적으로 배치
+ * - 3. get_Date_Interval()을 사용하여 마지막 비밀번호 변경일로부터 경과일(D-Day)을 계산
+ * - 4. 유저별 소속 그룹이 여러 개인 경우, 반복문을 통해 그룹명과 GID를 리스트 형태로 출력
+ * * @section MEMORY_INFO 메모리 관리 (중요)
+ * - 할당(Malloc) : 
+ * - @c userList : get_UserList() 내부에서 유저 정보 배열 할당
+ * - @c validIndices : 유효 유저 인덱스 저장을 위해 현재 함수 내부에서 직접 할당
+ * - 해제(Free) : 
+ * - 내부 데이터 해제 : 유저별 @c userName 및 @c gid 포인터를 반복문으로 개별 해제
+ * - 전체 구조체 해제 : @c userList 및 @c validIndices 를 최종적으로 명시적 해제
+ * * @section INOUTPUT 입출력 자료
+ * - INPUT  : 없음 (시스템 계정 파일 /etc/passwd, /etc/shadow 등 참조)
+ * - OUTPUT : 유저명, UID, 마지막 로그인 IP/날짜, 비번 변경일, 소속 그룹 리스트 화면 출력
+ * * @section ERROR_HANDLING 에러 처리
+ * - 데이터가 없는 항목(로그인 기록 등)에 대해 "N/A" 처리를 수행하여 시각적 오류를 방지
+ * * @section create 작성 정보
+ * - 작성자       : 이영인
+ * - 작성일       : 2026/02/19
+ * -@section modify 수정 정보
+ * - 수정자/수정일 : 수정 내역
+ * - 이영인 / 2026.02.19 : Doxygen 가이드라인에 따른 메모리 및 알고리즘 명세 추가
+ */
 // /* List of functions relative to 6th feature. (Display Linux User Account Status) */
 void six_User_Account_Status() { // Display UserList (Name, uid, gids, Login Date, Login IP, PW Change Date)
     invoked_menu = 1;

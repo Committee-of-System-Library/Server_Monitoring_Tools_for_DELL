@@ -682,6 +682,24 @@ int get_Maximum_Length_of_DiskInfo(DiskInfo* diskList, int diskCnt, int type) { 
     return len;
 }
 
+/**
+ * @mainpage 서버 모니터링 시스템 (Server Monitoring Tools for DELL)
+ * @section intro 프로그램 소개
+ * - 프로그램 목적 : 서버의 파티션 정보 및 시스템 자원을 실시간으로 모니터링하는 도구
+ * @section info 프로그램 상세
+ * - 프로그램명   : Server Monitoring Tool (C language)
+ * - 프로그램 내용 : ncurses를 활용한 UI 제공 및 파티션 사용량 그래프 출력
+ * @section inout 입출력 정보
+ * - INPUT        : 시스템 파티션 정보 (/proc, /etc/mtab 등)
+ * - OUTPUT       : ncurses 기반 실시간 대시보드 화면 출력
+ * @section create 작성 정보
+ * - 작성자       : 이영인
+ * - 작성일       : 2026/02/19
+ * @section modify 수정 정보
+ * - 수정자/수정일 : 수정 내역
+ * - 이영인 / 2026.02.19 : Doxygen 가이드라인에 따른 메모리 및 알고리즘 명세 추가
+ */
+
 void display_Partition_Information() { // Get Partition Information - FileSystem, mountPath, Space
     invoked_SubScreen = 1;
 
