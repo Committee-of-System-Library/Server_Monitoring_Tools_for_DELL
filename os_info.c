@@ -24,7 +24,7 @@
 extern const DateInfo dateBuf;
 
 /* List of functions of using to check System Running Process */
-int get_Process_Status(ProcessInfo** psBuf, int lineCnt) { // Get process status -> Sorted by RAM in decreasing order.
+int get_Process_Status(ProcessInfo** psBuf, int lineCnt, int offset) { // Get process status -> Sorted by RAM in decreasing order.
     // lineCnt -> the number of displaying the data. It is remaining space of terminal window size.
     FILE* ps_ptr = NULL;
     char errorBuf[BUF_MAX_LINE] = { '\0' }, pathBuf[MAX_MOUNTPATH_LEN] = { '\0' };
@@ -55,9 +55,18 @@ int get_Process_Status(ProcessInfo** psBuf, int lineCnt) { // Get process status
         return -100;
     }
 
-    fgets(errorBuf, sizeof(errorBuf), ps_ptr); // Skip Header | USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND       
+    fgets(errorBuf, sizeof(errorBuf), ps_ptr); // Skip Header | USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+    for (int i = 0; i < offset; i++) {
+        if (fgets(errorBuf, sizeof(errorBuf), ps_ptr) == NULL) { // Skip lines by offset
+            pclose(ps_ptr);
+            return -1; // Reached end of process list
+        }
+    }
+    
     for (int i = 0; i < lineCnt; i++) {
-        fscanf(ps_ptr, GET_PS_INFO_FORM, (*psBuf)[i].userName, &((*psBuf)[i].pid), &((*psBuf)[i].cpu), &((*psBuf)[i].mem), &((*psBuf)[i].memUseSize), (*psBuf)[i].tty, (*psBuf)[i].start, (*psBuf)[i].time, pathBuf);
+        if(fscanf(ps_ptr, GET_PS_INFO_FORM, (*psBuf)[i].userName, &((*psBuf)[i].pid), &((*psBuf)[i].cpu), &((*psBuf)[i].mem), &((*psBuf)[i].memUseSize), (*psBuf)[i].tty, (*psBuf)[i].start, (*psBuf)[i].time, pathBuf) == EOF){
+            break;
+        }
         if ((*psBuf)[i].command == NULL) {
             if (((*psBuf)[i].command = (char*)malloc((strlen(pathBuf) + 1) * sizeof(char))) == NULL) { // Allocate array for string (Command)
                 sprintf(errorBuf, "malloc() - psBuf[%d].command", i);

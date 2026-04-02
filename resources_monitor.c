@@ -172,13 +172,13 @@ void two_Hardware_Temperature() { // Display Hardware Temperature
     invoked_menu = 1;
 
     TempLog temp1sec;
-    int pos_x = 3, pos_y = 1, cpuAvgInterval = 900;
+    int pos_x = 3, pos_y = 1, avgInterval = 900;
     char barBuf[BUF_MAX_LINE] = { '\0' };
     float cpu_avg_temp[2];
 
     WINDOW *headerWin = newwin(1, wbuf.ws_col, 0, 0);
-    WINDOW *userWin = newwin(wbuf.ws_row - 1 - 1, wbuf.ws_col, 1, 0);
-    WINDOW *footerWin = newwin(1, wbuf.ws_col, wbuf.ws_row - 1, 0);
+    WINDOW *userWin = newwin(wbuf.ws_row - 1 - 2, wbuf.ws_col, 1, 0);
+    WINDOW *footerWin = newwin(2, wbuf.ws_col, wbuf.ws_row - 2, 0);
 
     while(invoked_menu == 1) {
         pos_x = 3;
@@ -212,7 +212,7 @@ void two_Hardware_Temperature() { // Display Hardware Temperature
         wattroff(userWin, COLOR_PAIR(BLACK_TEXT_WHITE_BACKGROUND));
 
         pos_y++;
-        get_Average_Temperature_from_Log(cpu_avg_temp, cpuAvgInterval, TYPE_CPU_TEMP, NULL);
+        get_Average_Temperature_from_Log(cpu_avg_temp, avgInterval, TYPE_CPU_TEMP, NULL);
         for (int i = 0; i < MAX_CPU_COUNT; i++) {
             if (temp1sec.temp.cpu[i] == -100) {
                 get_Percent_Bar(barBuf, 100 * (temp1sec.temp.cpu[i]/ (float)CPU_TEMP_CRITICAL_POINT), wbuf.ws_col - strlen("- CPU1 (AVG): ") - 7 - pos_x - 3 - strlen(" (Interval: 11111 Sec.)"));
@@ -223,7 +223,7 @@ void two_Hardware_Temperature() { // Display Hardware Temperature
                 get_Percent_Bar(barBuf, 100 * (temp1sec.temp.cpu[i]/ (float)CPU_TEMP_CRITICAL_POINT), wbuf.ws_col - strlen("- CPU1 (AVG): ") - 7 - pos_x - 3 - strlen(" (Interval: 11111 Sec.)"));
                 mvwprintw(userWin, pos_y += 1, pos_x, "- CPU%d %5s: %s %4.1f C", i + 1, "", barBuf, (float)temp1sec.temp.cpu[i]);
                 get_Percent_Bar(barBuf, 100 * (cpu_avg_temp[i]/ (float)CPU_TEMP_CRITICAL_POINT), wbuf.ws_col - strlen("- CPU1 (AVG): ") - 7 - pos_x - 3 - strlen(" (Interval: 11111 Sec.)"));
-                mvwprintw(userWin, pos_y += 1, pos_x, "- CPU%d %5s: %s %4.1f C (Interval: %5d Sec.)", i + 1, "(AVG)", barBuf, cpu_avg_temp[i], cpuAvgInterval);
+                mvwprintw(userWin, pos_y += 1, pos_x, "- CPU%d %5s: %s %4.1f C (Interval: %5d Sec.)", i + 1, "(AVG)", barBuf, cpu_avg_temp[i], avgInterval);
             }
         }
 
@@ -243,9 +243,9 @@ void two_Hardware_Temperature() { // Display Hardware Temperature
             }
         }
 
-        // mvwprintw(footerWin, 1, 1, "To see the list of partitions and its usage, Press \"p\"");
-        mvwprintw(footerWin, 0, 1, "%s", footLabel);
-        mvwprintw(footerWin, 0, wbuf.ws_col - 20 - strlen("System Time: "), "System Time: %04d-%02d-%02d %02d:%02d:%02d", dateBuf.year, dateBuf.month, dateBuf.day, dateBuf.hrs, dateBuf.min, dateBuf.sec);
+        mvwprintw(footerWin, 0, 1, "To change interval, Press '+'(Inc) or '-'(Dec).");
+        mvwprintw(footerWin, 1, 1, "%s", footLabel);
+        mvwprintw(footerWin, 1, wbuf.ws_col - 20 - strlen("System Time: "), "System Time: %04d-%02d-%02d %02d:%02d:%02d", dateBuf.year, dateBuf.month, dateBuf.day, dateBuf.hrs, dateBuf.min, dateBuf.sec);
 
         refresh();
         wrefresh(headerWin);
@@ -253,6 +253,12 @@ void two_Hardware_Temperature() { // Display Hardware Temperature
         wrefresh(footerWin);
         timeout(1000);
         switch(getch()) {
+			case '+':
+				avgInterval = (avgInterval < 86400) ? avgInterval + 1 : 86400;
+				break;
+			case '-':
+				avgInterval = (avgInterval > 1) ? avgInterval - 1 : 1;
+				break;
             case 'q':
             case 'Q':
             case 27: // ESC
@@ -275,14 +281,14 @@ void three_CPU_Memory_Usage() { // Display CPU / Memory Usage and Process Status
     UsageLog usage1sec;
     ProcessInfo* psList = NULL;
     UNIT memTotalUnit, memUseUnit, memUseAvgUnit, swapUseUnit, swapTotalUnit, psMemUnit = 0;
-    int pos_x = 3, pos_y = 1, barLength = 35, cpu_interval = 10, mem_intverval = 10, psLineCnt = 0, tmp;
+    int pos_x = 3, pos_y = 1, barLength = 35, avgInterval = 10, psLineCnt = 0, tmp, scroll_offset = 0;
     int userNameWidth = 0, ttyWidth = 0, startWidth = 0, timeWidth = 0, pidWidth = 8, cpuWidth = 5, memPercentWidth = 5, memSizeWidth = 8;
     char barBuf[BUF_MAX_LINE] = { '\0' };
     float cpu_avg, mem_avg[2], memUseConverted, memTotalConverted, swapUseConverted, swapTotalConverted, memUseAvgConverted, psMemUseConverted;
 
     WINDOW *headerWin = newwin(1, wbuf.ws_col, 0, 0);
-    WINDOW *userWin = newwin(wbuf.ws_row - 1 - 1, wbuf.ws_col, 1, 0);
-    WINDOW *footerWin = newwin(1, wbuf.ws_col, wbuf.ws_row - 1, 0);
+    WINDOW *userWin = newwin(wbuf.ws_row - 1 - 2, wbuf.ws_col, 1, 0);
+    WINDOW *footerWin = newwin(2, wbuf.ws_col, wbuf.ws_row - 2, 0);
     
     while(invoked_menu == 1) {
         pos_x = 3;
@@ -296,8 +302,8 @@ void three_CPU_Memory_Usage() { // Display CPU / Memory Usage and Process Status
         mvwprintw(userWin, pos_y, pos_x - 1, "3. CPU / Memory Usage");
         mvwprintw(userWin, pos_y, (wbuf.ws_col / 2) - CENTER_OFFSET + 13, "- Server Hostname: %s", hostnameBuf);
 
-        get_Average_Usage_Percent_from_Log(&cpu_avg, cpu_interval, TYPE_CPU_USAGE, NULL);
-        get_Average_Usage_Percent_from_Log(mem_avg, mem_intverval, TYPE_MEM_USAGE, NULL);
+        get_Average_Usage_Percent_from_Log(&cpu_avg, avgInterval, TYPE_CPU_USAGE, NULL);
+        get_Average_Usage_Percent_from_Log(mem_avg, avgInterval, TYPE_MEM_USAGE, NULL);
 
         memUseConverted = convert_Size_Unit(usage1sec.mem.memUse, 1, &memUseUnit);
         memTotalConverted = convert_Size_Unit(usage1sec.mem.memTotal, 1, &memTotalUnit);
@@ -310,7 +316,7 @@ void three_CPU_Memory_Usage() { // Display CPU / Memory Usage and Process Status
         mvwprintw(userWin, pos_y += 2, pos_x, "%-20s %s %5.1f%%", "- CPU Usage", barBuf, usage1sec.cpu.usage);
         
         get_Percent_Bar(barBuf, cpu_avg, barLength);
-        mvwprintw(userWin, pos_y += 1, pos_x, "%-20s %s %5.1f%% (Inteval: %5d sec.)", "- CPU Usage (AVG)", barBuf, cpu_avg, cpu_interval);
+        mvwprintw(userWin, pos_y += 1, pos_x, "%-20s %s %5.1f%% (Inteval: %5d sec.)", "- CPU Usage (AVG)", barBuf, cpu_avg, avgInterval);
         
         get_Percent_Bar(barBuf, get_Capacity_Percent(usage1sec.mem.memTotal, usage1sec.mem.memUse), barLength);
         mvwprintw(userWin, pos_y += 2, pos_x, "%-20s %s %5.1f%% (%.2f%s / %.2f%s)", 
@@ -318,7 +324,7 @@ void three_CPU_Memory_Usage() { // Display CPU / Memory Usage and Process Status
         
         get_Percent_Bar(barBuf, mem_avg[0], barLength);
         mvwprintw(userWin, pos_y += 1, pos_x, "%-20s %s %5.1f%% (%.2f%s / %.2f%s, Inteval: %5d sec.)",
-            "- Memory Usage (AVG)", barBuf, mem_avg[0], memUseAvgConverted, unitMap[memUseAvgUnit].str, memTotalConverted, unitMap[memTotalUnit].str, mem_intverval);
+            "- Memory Usage (AVG)", barBuf, mem_avg[0], memUseAvgConverted, unitMap[memUseAvgUnit].str, memTotalConverted, unitMap[memTotalUnit].str, avgInterval);
         
         get_Percent_Bar(barBuf, get_Capacity_Percent(usage1sec.mem.swapTotal, usage1sec.mem.swapUse), barLength);
         mvwprintw(userWin, pos_y += 1, pos_x, "%-20s %s %5.1f%% (%.2f%s / %.2f%s)", 
@@ -334,7 +340,7 @@ void three_CPU_Memory_Usage() { // Display CPU / Memory Usage and Process Status
         pos_y++;
         psLineCnt = wbuf.ws_row - pos_y - 1 - 1 - 1;
         
-        get_Process_Status(&psList, psLineCnt);
+        get_Process_Status(&psList, psLineCnt, scroll_offset);
         userNameWidth = get_Maximum_Length_of_ProcessInfo(psList, psLineCnt, TYPE_PROCESS_USERNAME) + 1;
         ttyWidth = get_Maximum_Length_of_ProcessInfo(psList, psLineCnt, TYPE_PROCESS_TTY) + 1;
         startWidth = get_Maximum_Length_of_ProcessInfo(psList, psLineCnt, TYPE_PROCESS_START) + 1;
@@ -354,12 +360,12 @@ void three_CPU_Memory_Usage() { // Display CPU / Memory Usage and Process Status
         pos_y++;
 
         for (int i = 0; i < psLineCnt; i++) {
+			wmove(userWin, pos_y + i, 0);
+            whline(userWin, ' ', wbuf.ws_col);
             pos_x = 3;
             for (tmp = psLineCnt; tmp /= 10; pos_x++);
             psMemUseConverted = convert_Size_Unit(psList[i].memUseSize, 1, &psMemUnit);
-            wmove(userWin, pos_y + i, 0);
-            whline(userWin, ' ', wbuf.ws_col - 1);
-            mvwprintw(userWin, pos_y + i, 1, "%d", i + 1);
+            mvwprintw(userWin, pos_y + i, 1, "%d", i + 1 + scroll_offset);
             mvwprintw(userWin, pos_y + i, pos_x, "%s", psList[i].userName);
             mvwprintw(userWin, pos_y + i, pos_x += userNameWidth, "%d", psList[i].pid);
             if (psList[i].cpu == 100) {
@@ -379,8 +385,9 @@ void three_CPU_Memory_Usage() { // Display CPU / Memory Usage and Process Status
             mvwprintw(userWin, pos_y + i, pos_x += timeWidth, "%s", psList[i].command);
         }
 
-        mvwprintw(footerWin, 0, 1, "%s", footLabel);
-        mvwprintw(footerWin, 0, wbuf.ws_col - 20 - strlen("System Time: "), "System Time: %04d-%02d-%02d %02d:%02d:%02d", dateBuf.year, dateBuf.month, dateBuf.day, dateBuf.hrs, dateBuf.min, dateBuf.sec);
+        mvwprintw(footerWin, 0, 1, "To change interval, Press '+'(Inc) or '-'(Dec). To scroll list, Press UP/DOWN Arrow key.");
+        mvwprintw(footerWin, 1, 1, "%s", footLabel);
+        mvwprintw(footerWin, 1, wbuf.ws_col - 20 - strlen("System Time: "), "System Time: %04d-%02d-%02d %02d:%02d:%02d", dateBuf.year, dateBuf.month, dateBuf.day, dateBuf.hrs, dateBuf.min, dateBuf.sec);
 
         refresh();
         wrefresh(headerWin);
@@ -388,6 +395,18 @@ void three_CPU_Memory_Usage() { // Display CPU / Memory Usage and Process Status
         wrefresh(footerWin);
         timeout(1000);
         switch(getch()) {
+			case '+':
+				avgInterval = (avgInterval < 86400) ? avgInterval + 1 : 86400;
+				break;
+			case '-':
+				avgInterval = (avgInterval > 1) ? avgInterval - 1 : 1;
+				break;
+			case KEY_UP:
+				scroll_offset = (scroll_offset > 0) ? scroll_offset - 1 : 0;
+				break;
+			case KEY_DOWN:
+				scroll_offset++;
+				break;
             case 'q':
             case 'Q':
             case 27: // ESC

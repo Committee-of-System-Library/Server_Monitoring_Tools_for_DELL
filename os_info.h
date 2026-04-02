@@ -4,7 +4,7 @@
 #include "zz_struct.h"
 
 /* List of functions of using to check System Running Process */
-int get_Process_Status(ProcessInfo** psBuf, int lineCnt);
+int get_Process_Status(ProcessInfo** psBuf, int lineCnt, int offset);
 
 /* List of functions that check history that try to login this server */
 int get_Login_History(LoginInfo** historyBuf, int* historyCnt);

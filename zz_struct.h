@@ -201,48 +201,63 @@ typedef struct HBAInfo { // DIsk Information
     BBUInfo bbuStatus;
 } HBAInfo;
 
-/* Temp Information */
-typedef struct TempInfo { // Celcius
-    short inlet;
-    short exhaust;
-    short cpu[MAX_CPU_COUNT];
-    short raidCore;
-    short raidController;
-    short bbu;
-    short storage_cnt;
-    short storage[MAX_STORAGE_COUNT];
+/**
+ * @brief 하드웨어 온도 정보를 저장하는 구조체 (단위: Celcius)
+ */
+typedef struct TempInfo {
+    short inlet;            ///< 서버 유입 공기 온도
+    short exhaust;          ///< 서버 배출 공기 온도
+    short cpu[MAX_CPU_COUNT]; ///< CPU 패키지 온도
+    short raidCore;         ///< RAID 컨트롤러 코어 온도
+    short raidController;   ///< RAID 컨트롤러 온도
+    short bbu;              ///< BBU (Battery Backup Unit) 온도
+    short storage_cnt;      ///< 감지된 스토리지 개수
+    short storage[MAX_STORAGE_COUNT]; ///< 각 스토리지 온도
 } TempInfo;
 
-/* Usage Information */
-typedef struct CpuUsage { // %
-    float usage;    
+/**
+ * @brief CPU 사용률 정보를 저장하는 구조체 (단위: %)
+ */
+typedef struct CpuUsage {
+    float usage;    ///< 전체 CPU 코어의 평균 사용률
 } CpuUsage;
 
-typedef struct MemUsage { // KB; Capacity
-    size_t memTotal; 
-    size_t memUse;
-    size_t swapTotal;
-    size_t swapUse;
+/**
+ * @brief 메모리 사용량 정보를 저장하는 구조체 (단위: KB)
+ */
+typedef struct MemUsage {
+    size_t memTotal;    ///< 전체 물리 메모리 크기
+    size_t memUse;      ///< 사용 중인 물리 메모리 크기
+    size_t swapTotal;   ///< 전체 스왑 메모리 크기
+    size_t swapUse;     ///< 사용 중인 스왑 메모리 크기
 } MemUsage;
 
-/* saved struct to log */
+/**
+ * @brief 온도 정보 로그 파일에 저장하기 위한 구조체
+ */
 typedef struct TempLog {
-    DateInfo date;
-    TempInfo temp;
+    DateInfo date;  ///< 측정 시각
+    TempInfo temp;  ///< 온도 정보
 } TempLog;
 
+/**
+ * @brief 자원 사용량 로그 파일에 저장하기 위한 구조체
+ */
 typedef struct UsageLog {
-    DateInfo date;
-    CpuUsage cpu;
-    MemUsage mem;
+    DateInfo date;  ///< 측정 시각
+    CpuUsage cpu;   ///< CPU 사용량 정보
+    MemUsage mem;   ///< 메모리 사용량 정보
 } UsageLog;
 
+/**
+ * @brief 임계치 초과 시 경고 로그를 저장하기 위한 구조체
+ */
 typedef struct WarningLog {
-    DateInfo date;
-    TempInfo temp;
-    CpuUsage cpuUsage;
-    MemUsage memUsage;
-    short type;
+    DateInfo date;      ///< 측정 시각
+    TempInfo temp;      ///< 온도 정보
+    CpuUsage cpuUsage;  ///< CPU 사용량 정보
+    MemUsage memUsage;  ///< 메모리 사용량 정보
+    short type;         ///< 임계치를 초과한 자원 종류 (0_usrDefine.h 참고)
 } WarningLog;
 
 #endif
